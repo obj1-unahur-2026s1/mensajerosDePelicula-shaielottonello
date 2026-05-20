@@ -1,0 +1,122 @@
+import destinos.*
+import mensajeria.*
+import mensajeros.*
+import paquetes.*
+import vehiculos.*
+
+describe "Test de mensajeria" {
+    method initialize() {
+        empresa.despedirATodos()
+    }
+    test "Contratar a un mensajero" {
+    empresa.contratarUnMensajero(chuckNorris)
+    assert.that(empresa.mensajeros().contains(chuckNorris))
+    }
+    test "Despedir a un mensajero" {
+    empresa.contratarUnMensajero(chuckNorris)
+    empresa.contratarUnMensajero(roberto)
+    empresa.despedirUnMensajero(chuckNorris)
+    assert.notThat(empresa.mensajeros().contains(chuckNorris))
+    assert.that(empresa.mensajeros().contains(roberto))
+    }
+    test "Despedir a todos" {
+    empresa.contratarUnMensajero(chuckNorris)
+    empresa.contratarUnMensajero(roberto)
+    empresa.despedirATodos()
+    assert.that(empresa.mensajeros().isEmpty())
+    }
+    test "Analizar si es grande" {
+    empresa.contratarUnMensajero(roberto)
+    assert.notThat(empresa.esGrande())
+    }
+    test "Consultar si el paquete puede ser entregado por el primer empleado" {
+    empresa.contratarUnMensajero(chuckNorris)
+    empresa.contratarUnMensajero(roberto)
+    paquete.registrarPago()
+    paquete.cambiarDestino(lamatrix)
+    assert.that(empresa.puedeSerEntregadoPorElPrimerMensajero(paquete))
+    }
+    test "Saber peso del ultimo mensajero" {
+    empresa.contratarUnMensajero(chuckNorris)
+    empresa.contratarUnMensajero(roberto)
+    roberto.peso(70)
+    roberto.cambiarDeVehiculo(bicicleta) //+5
+    assert.equals(75, empresa.pesoDelUltimoMensajero())
+    }
+}
+
+describe "Test de mensajeria 2" {
+    test "Saber si al menos un mensajero de la empresa puede entregar un paquete" {
+        paquete.registrarPago()
+        paquete.cambiarDestino(brooklyn)
+        camion.acoplados(3)
+        roberto.cambiarDeVehiculo(camion)
+        empresa.contratarUnMensajero(roberto)
+        assert.notThat(empresa.puedeSerEntregadoPorLaEmpresa(paquete))
+        empresa.contratarUnMensajero(chuckNorris)
+        assert.that(empresa.puedeSerEntregadoPorLaEmpresa(paquete))
+    }
+    test "Obtener todos los mensajeros habilitados para un paquete" {
+        paquete.registrarPago()
+        paquete.cambiarDestino(lamatrix)
+        empresa.contratarUnMensajero(chuckNorris)
+        empresa.contratarUnMensajero(roberto)
+        //const habilitados = empresa.mensajerosHabilitadosParaEntregar(paquete)
+        assert.that(empresa.mensajerosHabilitadosParaEntregar(paquete).contains(chuckNorris))
+        assert.notThat(empresa.mensajerosHabilitadosParaEntregar(paquete).contains(roberto))
+    }
+    test "Saber si la mensajería tiene sobrepeso (promedio > 500)" {
+        camion.acoplados(2)
+        roberto.cambiarDeVehiculo(camion)
+        empresa.contratarUnMensajero(roberto)
+        assert.that(empresa.tieneSobrepeso())
+    }
+    test "Enviar paquete exitoso va a enviados y calcula facturacion" {
+        empresa.contratarUnMensajero(chuckNorris)
+        paquete.registrarPago()
+        paquete.cambiarDestino(brooklyn)
+        empresa.enviarUnPaquete(paquete)
+        assert.that(empresa.paquetesEnviados().contains(paquete))
+        assert.equals(50, empresa.facturacion())
+    }
+    test "Si no se puede entregar, va a pendientes" {
+        empresa.contratarUnMensajero(roberto)
+        paquete.registrarPago()
+        paquete.cambiarDestino(lamatrix)
+        empresa.enviarUnPaquete(paquete)
+        assert.that(empresa.paquetesPendientes().contains(paquete))
+        assert.equals(0, empresa.facturacion())
+    }
+    test "Enviar un lote de paquetes" {
+        empresa.contratarUnMensajero(chuckNorris)
+        paquete.registrarPago()
+        paquete.cambiarDestino(brooklyn)
+        empresa.enviarLoteDePaquetes([paquete, paquetito])
+        assert.equals(100, empresa.facturacion())
+    }
+
+    test "Enviar el paquete pendiente más caro" {
+        empresa.contratarUnMensajero(roberto)
+        paqueton.destinos().add(lamatrix)
+        paqueton.destinos().add(brooklyn)
+        paqueton.pagoParcial(200)
+        paquete.cancelarPago()
+        paquete.cambiarDestino(brooklyn)
+        empresa.enviarUnPaquete(paqueton)
+        empresa.enviarUnPaquete(paquete)
+        empresa.contratarUnMensajero(chuckNorris)
+        empresa.enviarPendienteMasCaro()
+        assert.notThat(empresa.paquetesPendientes().contains(paqueton))
+        assert.that(empresa.paquetesEnviados().contains(paqueton))
+        assert.equals(200, empresa.facturacion())
+        assert.that(empresa.paquetesPendientes().contains(paquete))
+    }
+    test "Garantizar que el nuevo paqueteExpress y Pipe funcionen juntos" {
+        empresa.contratarUnMensajero(pipe)
+        paqueteExpress.registrarPago()
+        paqueteExpress.cambiarDestino(brooklyn)
+        assert.that(paqueteExpress.puedeSerEntregado(pipe))
+        empresa.enviarUnPaquete(paqueteExpress)
+        assert.equals(150, empresa.facturacion())
+    }
+}
